@@ -52,6 +52,7 @@ video made here.
 - `beats.py` — `python beats.py song.wav [bpm_hint] > beats.json` (hint fixes half/double-time errors;
   `downbeats` assumes the first detected beat is beat 1, so prefer bpm + measured phase)
 - `scripts/stills.mjs` — cheap per-beat contact sheet straight from the page (critique rounds)
+- `scripts/preview.py` — self-contained live preview page (film + music + scrubber) to share before/while rendering
 - `scripts/serve.mjs` — static server shared by the renderer and stills
 - `scripts/review.sh` — contact sheet, strip, phone test, loop check from a rendered MP4
 - `scripts/mix.sh` — normalize audio to -14 LUFS and mux with the silent render

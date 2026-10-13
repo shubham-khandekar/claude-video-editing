@@ -45,6 +45,7 @@ re-renders, **xhigh** for new videos.
 | `python beats.py audio/track.wav [120] > beats.json` | Measure bpm, beats, downbeats and hits (optional bpm hint) |
 | `node scripts/stills.mjs --page films/x/index.html --dur 15` | One still per beat as a contact sheet, no full render needed |
 | `bash scripts/mix.sh out/audio.wav` | Normalize to -14 LUFS and mux with `out/silent.mp4` → `out/final.mp4` |
+| `python scripts/preview.py films/x out/audio.wav out/preview.html` | Self-contained live preview page: the film's own `seek(t)` in real time, with music and a scrubber |
 | `bash scripts/review.sh out/final.mp4 4.2` | Contact sheet, glitch strip, phone test, loop check, poster frame |
 
 ## Layout

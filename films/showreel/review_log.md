@@ -26,3 +26,11 @@ Fixes: exits now travel 1.4x the type size; "IT CLICKS." heading in the UI shot,
 ## Round 3 (`out/r3.png`)
 Hook 8 · readability 8 · motion 8 · variety 8 · composition 8 · consistency 8
 All stills clear. Moved on to the full render and video checks (motion strip, phone test, loop seam, sound sync).
+
+## Full render (`films/showreel/showreel.mp4`)
+`node render.mjs --page films/showreel/index.html --dur 15` (60 fps, 4 subframes) → `scripts/mix.sh` → -14.1 LUFS.
+- Loop seam: SSIM 0.9995 between the last and first frames.
+- Strip at 6.5s (UI click): motion blur reads on the morph; the cursor press lands on the beat.
+- Next: the button → loader content switches in one frame instead of behind the short blur used for the card.
+
+Live preview page: `python scripts/preview.py films/showreel out/showreel_audio.wav out/preview.html`.

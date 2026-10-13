@@ -1,0 +1,149 @@
+<meta charset="utf-8">
+<title>__TITLE__ Preview</title>
+<style>
+__FACES__
+/* Layout: the 9:16 frame is the hero; transport and shot list sit beside it (stacked on phones). */
+:root {
+  --bg: #e2dbcf; --surface: #efe9df; --fg: #161513; --muted: #6f695f; --line: #c9c1b3; --accent: #ff4b14;
+  --display: "Inter Display", "Helvetica Neue", Arial, sans-serif;
+  --mono: "DejaVu Sans Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121110; --surface: #1c1a18; --fg: #efe9df; --muted: #9a9387; --line: #34312c; --accent: #ff5a26; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121110; --surface: #1c1a18; --fg: #efe9df; --muted: #9a9387; --line: #34312c; --accent: #ff5a26; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--mono); padding-inline: 16px; padding-block: 24px; box-sizing: border-box; }
+.wrap { display: flex; gap: 40px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+.stage { flex: 0 1 auto; display: grid; place-items: center; }
+canvas { display: block; height: min(86vh, 1100px); width: auto; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 14px;
+  box-shadow: 0 1px 0 var(--line), 0 24px 60px -30px rgba(0, 0, 0, .45); cursor: pointer; }
+.panel { flex: 1 1 320px; max-width: 420px; min-width: 0; display: flex; flex-direction: column; gap: 22px; padding-top: 8px; }
+h1 { font: 900 clamp(40px, 6vw, 64px)/0.9 var(--display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--accent); }
+.sub { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0; }
+.transport { display: flex; align-items: center; gap: 14px; }
+button { font: inherit; color: inherit; }
+.play { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--fg); color: var(--bg); display: grid; place-items: center; cursor: pointer; flex: none; }
+.play:focus-visible, .shot:focus-visible, input:focus-visible, .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.play svg { width: 20px; height: 20px; fill: currentColor; }
+.time { font-variant-numeric: tabular-nums; font-size: 15px; }
+.time span { color: var(--muted); }
+.chips { margin-left: auto; display: flex; gap: 8px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.scrub { position: relative; }
+.scrub input { width: 100%; margin: 0; accent-color: var(--accent); }
+.ticks { position: relative; height: 10px; margin: 4px 7px 0; }
+.ticks i { position: absolute; top: 0; width: 1px; height: 4px; background: var(--line); }
+.ticks i.down { height: 10px; background: var(--muted); }
+.shots { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.shot { width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.shot small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.shot.on { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.keys { color: var(--muted); font-size: 12px; margin: 0; }
+kbd { font: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+@media (max-width: 760px) { canvas { height: auto; width: min(100%, 420px); } .panel { max-width: 420px; } }
+</style>
+
+<div class="wrap">
+  <div class="stage"><canvas id="c" width="1080" height="1920" aria-label="Film preview. Click to play or pause."></canvas></div>
+  <div class="panel">
+    <div>
+      <h1>__TITLE__<em>.</em></h1>
+      <p class="sub">Live preview: the film's own <code>seek(t)</code> painting every frame in your browser, with the score composed in code. 1080×1920, 120 BPM, loops.</p>
+    </div>
+    <div class="transport">
+      <button class="play" id="play" aria-label="Play"><svg viewBox="0 0 20 20" id="icon"><path d="M5 3l12 7-12 7z"/></svg></button>
+      <div class="time" id="time">0.00 <span>/ __DUR__s</span></div>
+      <div class="chips">
+        <button class="chip" id="mute" aria-pressed="false">Mute</button>
+        <button class="chip" id="slow" aria-pressed="false">0.25×</button>
+      </div>
+    </div>
+    <div class="scrub">
+      <input type="range" id="scrub" min="0" max="__DUR__" step="0.001" value="0" aria-label="Scrub through the film">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div>
+      <p class="label">Shots · cut on every downbeat</p>
+      <ul class="shots" id="shots"></ul>
+    </div>
+    <p class="keys"><kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> one beat · <kbd>,</kbd><kbd>.</kbd> one frame</p>
+  </div>
+</div>
+<audio id="audio" src="__AUDIO__" preload="auto" loop></audio>
+
+<script type="module">
+__FILM__
+</script>
+<script type="module">
+const DUR = __DUR__, SHOTS = __SHOTS__, REST = 1.9;
+const $ = (id) => document.getElementById(id);
+const audio = $('audio'), scrub = $('scrub'), playBtn = $('play');
+let playing = false, t = REST, last = 0, rate = 1;
+
+await window.ready;
+await Promise.all([100, 200, 300, 400, 500, 600, 700, 800, 900].map((w) => document.fonts.load(`${w} 100px "Inter Display"`))
+  .concat(document.fonts.load('400 40px "DejaVu Sans Mono"')));
+
+const shotLen = __SHOT_LEN__;                 // 4 beats per shot, from the measured bpm
+SHOTS.forEach((name, i) => {
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.className = 'shot'; b.dataset.i = i;
+  b.innerHTML = `<span>${name}</span><small>${(i * shotLen).toFixed(0)}s</small>`;
+  b.onclick = () => go(i * shotLen + 0.001);
+  li.append(b); $('shots').append(li);
+});
+for (let k = 0; k < DUR / 0.5; k++) {
+  const i = document.createElement('i'); i.style.left = `${(k * 0.5 / DUR) * 100}%`;
+  if (k % 4 === 0) i.className = 'down';
+  $('ticks').append(i);
+}
+
+function paint() {
+  window.seek(t);
+  scrub.value = t;
+  $('time').firstChild.nodeValue = t.toFixed(2) + ' ';
+  const cur = Math.min(SHOTS.length - 1, Math.floor(t / shotLen));
+  document.querySelectorAll('.shot').forEach((el) => el.classList.toggle('on', +el.dataset.i === cur));
+}
+function go(nt) { t = ((nt % DUR) + DUR) % DUR; try { audio.currentTime = t; } catch {} paint(); }
+function setPlaying(p) {
+  playing = p;
+  playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+  $('icon').innerHTML = p ? '<path d="M4 3h4v14H4zM12 3h4v14h-4z"/>' : '<path d="M5 3l12 7-12 7z"/>';
+  if (p) { audio.currentTime = t; audio.playbackRate = rate; audio.play().catch(() => {}); last = performance.now(); }
+  else audio.pause();
+}
+function frame(now) {
+  if (playing) {
+    if (!audio.paused && rate === 1) t = audio.currentTime;
+    else t = (t + (now - last) / 1000 * rate) % DUR;
+    last = now;
+    paint();
+  }
+  requestAnimationFrame(frame);
+}
+
+playBtn.onclick = () => setPlaying(!playing);
+$('c').onclick = () => setPlaying(!playing);
+scrub.oninput = () => go(+scrub.value);
+$('mute').onclick = (e) => { audio.muted = !audio.muted; e.currentTarget.setAttribute('aria-pressed', audio.muted); };
+$('slow').onclick = (e) => {
+  rate = rate === 1 ? 0.25 : 1; e.currentTarget.setAttribute('aria-pressed', rate !== 1);
+  audio.playbackRate = rate; if (rate !== 1) audio.muted = true; else { audio.muted = $('mute').getAttribute('aria-pressed') === 'true'; audio.currentTime = t; }
+};
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' && e.key !== ' ') return;
+  if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
+  else if (e.key === 'ArrowRight') go(t + 0.5); else if (e.key === 'ArrowLeft') go(t - 0.5);
+  else if (e.key === '.') go(t + 1 / 60); else if (e.key === ',') go(t - 1 / 60);
+});
+
+paint();
+requestAnimationFrame(frame);
+</script>
