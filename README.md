@@ -42,7 +42,8 @@ re-renders, **xhigh** for new videos.
 | Command | What it does |
 | --- | --- |
 | `node render.mjs --dur 15 [--fps 60 --sub 4 --w 1080 --h 1920 --out out/silent.mp4]` | Render `index.html`; `--sub 4` blends 4 subframes per frame for motion blur |
-| `python beats.py audio/track.wav > beats.json` | Measure bpm, beats, downbeats and hits |
+| `python beats.py audio/track.wav [120] > beats.json` | Measure bpm, beats, downbeats and hits (optional bpm hint) |
+| `node scripts/stills.mjs --page films/x/index.html --dur 15` | One still per beat as a contact sheet, no full render needed |
 | `bash scripts/mix.sh out/audio.wav` | Normalize to -14 LUFS and mux with `out/silent.mp4` → `out/final.mp4` |
 | `bash scripts/review.sh out/final.mp4 4.2` | Contact sheet, glitch strip, phone test, loop check, poster frame |
 
@@ -56,6 +57,7 @@ beats.py                        beat grid analysis
 scripts/review.sh, mix.sh       review images, audio mix
 prompts/                        brief templates
 .claude/skills/motion-reel/     the packaged pipeline
+films/showreel/                 15s showreel: film, score, beat grid, review log
 examples/smoke/                 minimal working film used to verify the pipeline
 assets/ refs/ audio/ docs/      per-project inputs and planning docs
 out/                            renders (git-ignored)

@@ -16,8 +16,9 @@ a reference (frame, video, or image folder), music (file or "synthesize").
 2. If a reference exists, write docs/style_guide.md from it (see prompts/03-reference.md).
 3. Measure or synthesize music. `python beats.py audio/track.wav > beats.json`.
 4. Write docs/shotlist.md on the beat grid. Show it and wait for OK.
-5. Build index.html with window.seek(t) using lib/motion.js springs. Follow CLAUDE.md.
-6. Contact sheet → critique → fix. 3 rounds minimum (`scripts/review.sh`, prompts/07-critique.md).
+5. Build films/<name>/index.html with window.seek(t) using lib/motion.js springs. Follow CLAUDE.md.
+6. Contact sheet → critique → fix. 3 rounds minimum (`scripts/stills.mjs` per round, then
+   `scripts/review.sh` on the render; prompts/07-critique.md). Log rounds in films/<name>/review_log.md.
 7. `node render.mjs --dur N` → sound → `scripts/mix.sh` to -14 LUFS → out/final.mp4, all formats
    (`--w 1080 --h 1080` and `--w 1920 --h 1080` with `--out out/<format>.mp4`).
 8. Deliver final.mp4, contact.png, poster.png. Say what you'd improve next.

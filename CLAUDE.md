@@ -11,6 +11,7 @@ video made here.
   no state carried between frames. Seeded noise only, never Math.random.
 - Render with `node render.mjs`. Encode H.264 yuv420p, CRF 16.
 - The renderer serves the project root over http: import helpers as `/lib/motion.js`.
+- Async setup (e.g. fetching `beats.json`) goes in a `window.ready` promise; the renderer awaits it.
 - Wait for fonts before painting (render.mjs awaits `document.fonts.ready`).
 
 ## Look
@@ -34,7 +35,8 @@ video made here.
 - Only use music we have the rights to.
 
 ## Loop before you show me anything
-1. Render one frame per beat as a contact sheet and LOOK at it (`scripts/review.sh`).
+1. Render one frame per beat as a contact sheet and LOOK at it
+   (`node scripts/stills.mjs --page <film>/index.html --dur N`; after a render, `scripts/review.sh`).
 2. Score it 1-10 on: hook in first 2s, readability at phone size,
    motion quality, variety, brand accuracy, sound sync.
 3. Fix the 3 worst problems. Repeat until every score is 8+ (3 rounds minimum).
@@ -47,9 +49,13 @@ video made here.
 ## Project layout
 - `render.mjs` — renderer: `node render.mjs --dur 15 --fps 60 --sub 4 [--w 1080 --h 1920] [--out out/silent.mp4] [--page index.html]`
 - `lib/motion.js` — closed-form springs (`spring`, `track`, `clamp`)
-- `beats.py` — `python beats.py song.wav > beats.json`
+- `beats.py` — `python beats.py song.wav [bpm_hint] > beats.json` (hint fixes half/double-time errors;
+  `downbeats` assumes the first detected beat is beat 1, so prefer bpm + measured phase)
+- `scripts/stills.mjs` — cheap per-beat contact sheet straight from the page (critique rounds)
+- `scripts/serve.mjs` — static server shared by the renderer and stills
 - `scripts/review.sh` — contact sheet, strip, phone test, loop check from a rendered MP4
 - `scripts/mix.sh` — normalize audio to -14 LUFS and mux with the silent render
+- `films/<name>/` — one folder per film: `index.html`, `beats.json`, music script, review log
 - `prompts/` — brief templates (product launch, reference, state list, director's brief, critique)
 - `assets/` gathered brand assets · `refs/` references · `audio/` tracks · `docs/` style guide, shot list, review log · `out/` renders (git-ignored)
 - `/motion-reel` skill packages the whole pipeline (`.claude/skills/motion-reel/SKILL.md`).

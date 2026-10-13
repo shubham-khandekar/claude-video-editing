@@ -1,8 +1,11 @@
-"""Measure a music track's beat grid. Usage: python beats.py song.wav > beats.json"""
+"""Measure a music track's beat grid. Usage: python beats.py song.wav [bpm_hint] > beats.json
+Pass bpm_hint (e.g. 120) to fix the tempo when the tracker locks onto half or double time;
+the beat phase is still measured from the audio."""
 import sys, json, numpy as np, librosa
 
 y, sr = librosa.load(sys.argv[1], sr=None, mono=True)
-tempo, frames = librosa.beat.beat_track(y=y, sr=sr, units="frames")
+hint = {"bpm": float(sys.argv[2])} if len(sys.argv) > 2 else {}
+tempo, frames = librosa.beat.beat_track(y=y, sr=sr, units="frames", **hint)
 beats = librosa.frames_to_time(frames, sr=sr).round(3).tolist()
 
 onset = librosa.onset.onset_strength(y=y, sr=sr)

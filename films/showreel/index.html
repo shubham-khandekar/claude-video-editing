@@ -1,0 +1,288 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Showreel</title>
+<style>html,body{margin:0;background:#efe9df}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="module">
+// 15s showreel. Pure function of time: window.seek(t) paints frame t.
+// Grid: measured from beats.json (bpm + phase). Shots cut on downbeats (every 4 beats).
+// Last frame equals the first: the accent dot at DOT.
+import { spring, track, clamp, rng } from '/lib/motion.js';
+
+const c = document.getElementById('c'), g = c.getContext('2d');
+const W = c.width, H = c.height, M = 96;
+const PAPER = '#efe9df', INK = '#161513', MUTE = '#8a847a', ACCENT = '#ff4b14';
+const DISPLAY = '"Inter Display"', MONO = '"DejaVu Sans Mono"';
+const DUR = 15;
+const DOT = { x: M, y: 1330, r: 28 };
+
+let BEAT = 0.5, PHASE = 0;
+const B = (n) => n * BEAT;                    // beat n, relative to the start of a shot
+window.ready = fetch('beats.json').then((r) => r.json()).then((d) => {
+  BEAT = 60 / d.bpm;
+  const offs = d.beats.map((x) => x - Math.round(x / BEAT) * BEAT).sort((p, q) => p - q);
+  PHASE = offs[offs.length >> 1] || 0;
+}).catch(() => {});
+
+// ---------- helpers ----------
+const font = (w, px, fam = DISPLAY) => `${w} ${px}px ${fam}`;
+const sizeCache = new Map();
+function fit(text, weight, maxW, fam = DISPLAY) {
+  const k = text + weight + maxW + fam;
+  if (!sizeCache.has(k)) { g.font = font(weight, 100, fam); sizeCache.set(k, 100 * maxW / g.measureText(text).width); }
+  return sizeCache.get(k);
+}
+// Text rising out of a mask. p: 0 hidden below, 1 in place, 2 gone above.
+function riseText(text, x, base, px, p, color = INK, weight = 900, fam = DISPLAY) {
+  if (p <= 0.001 || p >= 1.999) return;
+  g.save();
+  g.beginPath(); g.rect(0, base - px * 0.95, W, px * 1.2); g.clip();
+  g.font = font(weight, px, fam); g.fillStyle = color; g.textBaseline = 'alphabetic';
+  g.fillText(text, x, base + (p < 1 ? (1 - p) * px * 1.05 : -(p - 1) * px * 1.4));
+  g.restore();
+}
+const io = (t, tin, tout, k = 260, d = 40) => spring(t - tin, k, d) + (tout == null ? 0 : spring(t - tout, k, d));
+function rrect(x, y, w, h, r, fill) { g.beginPath(); g.roundRect(x, y, w, h, Math.max(0, Math.min(r, w / 2, h / 2))); g.fillStyle = fill; g.fill(); }
+function cursor(x, y, press = 0) {
+  g.save(); g.translate(x, y); g.scale(1.6 * (1 - 0.18 * press), 1.6 * (1 - 0.18 * press));
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 62); g.lineTo(16, 47); g.lineTo(28, 74); g.lineTo(40, 69); g.lineTo(28, 43); g.lineTo(48, 43); g.closePath();
+  g.fillStyle = INK; g.fill(); g.lineWidth = 4; g.strokeStyle = PAPER; g.stroke();
+  g.restore();
+}
+
+// ---------- shots ----------
+// 1. Hook: the dot becomes an underline, the claim stacks above it.
+function hook(t) {
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+  const lines = ["I DON'T", 'USE', 'KEYFRAMES.'];
+  const sizes = lines.map((l) => fit(l, 900, W - 2 * M));
+  const bases = []; let y = DOT.y - 70;
+  for (let i = lines.length - 1; i >= 0; i--) { bases[i] = y; y -= sizes[i] * 0.8; }
+  // highlight block behind KEYFRAMES. on beat 3
+  const hp = spring(t - B(3), 300, 30);
+  if (hp > 0) rrect(M - 18, bases[2] - sizes[2] * 0.78, (W - 2 * M + 36) * hp, sizes[2] * 0.9, 10, ACCENT);
+  lines.forEach((l, i) => riseText(l, M, bases[i], sizes[i], spring(t - B(i), 280, 36), i === 2 && hp > 0.5 ? PAPER : INK));
+  g.font = font(400, 44, MONO); g.fillStyle = INK;
+  const cap = spring(t - B(2), 260, 36);
+  if (cap > 0) { g.globalAlpha = clamp(cap); g.fillText('a showreel written as code.', M, DOT.y + 150 + (1 - cap) * 24); g.globalAlpha = 1; }
+  // dot -> underline
+  const w = track(t, [[0, DOT.r * 2], [B(0), W - 2 * M]], 200, 24);
+  rrect(DOT.x, DOT.y - DOT.r, w, DOT.r * 2, DOT.r, ACCENT);
+}
+
+// 2. Springs: one value re-targeted on every beat; the curve plots itself.
+function springs(t) {
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+  const keys = [[0, 0.08], [B(0), 0.82], [B(1), 0.22], [B(2), 0.66], [B(3), 0.4]];
+  const v = (s) => track(s, keys, 170, 14);
+  const gx = M, gy = 560, gw = W - 2 * M, gh = 560;
+  const X = (s) => gx + (s / 2) * gw, Y = (val) => gy + gh - val * gh;
+  // heading
+  riseText('SPRINGS,', M, 300, fit('SPRINGS,', 900, W - 2 * M), spring(t, 300, 36));
+  riseText('NOT CURVES', M, 440, fit('NOT CURVES', 300, W - 2 * M), spring(t - B(0.5), 300, 36), INK, 300);
+  // axes + target guides
+  g.strokeStyle = INK; g.lineWidth = 3; g.beginPath(); g.moveTo(gx, gy); g.lineTo(gx, gy + gh); g.lineTo(gx + gw, gy + gh); g.stroke();
+  g.font = font(400, 40, MONO); g.fillStyle = MUTE;
+  keys.slice(1).forEach(([kt, kv], i) => {
+    if (t < kt) return;
+    const a = clamp((t - kt) / 0.15);
+    g.globalAlpha = a; g.setLineDash([8, 10]); g.strokeStyle = MUTE; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(X(kt), Y(kv)); g.lineTo(gx + gw, Y(kv)); g.stroke(); g.setLineDash([]);
+    g.fillText(`→ ${kv.toFixed(2)}`, X(kt) + 14, Y(kv) - 16); g.globalAlpha = 1;
+  });
+  // curve
+  const end = Math.min(t, 2);
+  g.strokeStyle = ACCENT; g.lineWidth = 8; g.lineJoin = 'round'; g.beginPath();
+  for (let s = 0; s <= end; s += 1 / 240) { const px = X(s), py = Y(v(s)); s === 0 ? g.moveTo(px, py) : g.lineTo(px, py); }
+  g.stroke();
+  g.beginPath(); g.arc(X(end), Y(v(end)), 18, 0, 7); g.fillStyle = ACCENT; g.fill();
+  // the object it drives
+  const sz = 220, ox = M + v(t) * (W - 2 * M - sz);
+  g.save(); g.translate(ox + sz / 2, 1460); g.rotate((v(t) - 0.08) * Math.PI / 2);
+  rrect(-sz / 2, -sz / 2, sz, sz, 28, INK); g.restore();
+  g.font = font(400, 42, MONO); g.fillStyle = INK;
+  g.fillText(`x = ${v(t).toFixed(3)}`, M, 1740);
+  g.fillStyle = MUTE; g.fillText('k=170  d=14', M + 420, 1740);
+}
+
+// 3. Kinetic type: per-letter weight wave and tracking on springs.
+function kinetic(t) {
+  g.fillStyle = INK; g.fillRect(0, 0, W, H);
+  const rows = ['WEIGHT', 'IS', 'MOTION'];
+  rows.forEach((word, r) => {
+    const base = 620 + r * 420, px = fit('MOTION', 900, W - 2 * M);
+    const track_ = track(t, [[0, 0], [B(1), 26], [B(2.5), 0]], 180, 30);
+    let x = M;
+    [...word].forEach((ch, i) => {
+      const phase = (t - B(1)) * 3.2 - i * 0.35 - r * 0.6;
+      const wave = t < B(1) ? 1 : 0.5 + 0.5 * Math.cos(phase * Math.PI);
+      const wgt = 100 * Math.round(1 + 8 * wave);
+      const p = spring(t - (B(r * 0.5) + i * 0.04), 300, 38);
+      g.font = font(wgt, px);
+      const cw = g.measureText(ch).width;
+      g.save(); g.beginPath(); g.rect(0, base - px * 0.9, W, px * 1.1); g.clip();
+      g.fillStyle = (r === 2 && t > B(3)) ? ACCENT : PAPER;
+      g.fillText(ch, x, base + (1 - p) * px);
+      g.restore();
+      x += cw + track_;
+    });
+  });
+  g.font = font(400, 42, MONO); g.fillStyle = MUTE;
+  g.fillText('weight 100 → 900, per letter', M, 1740);
+}
+
+// 4. UI: one container never cuts. Button → loader → success → render card.
+function ui(t) {
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+  const S = [B(1), B(2), B(3)];                      // morph starts
+  const K = 240, D = 22;
+  const w = track(t, [[0, 760], [S[0], 320], [S[1], 320], [S[2], W - 2 * M]], K, D);
+  const h = track(t, [[0, 240], [S[0], 320], [S[1], 320], [S[2], 1000]], K, D);
+  const r = track(t, [[0, 120], [S[0], 160], [S[1], 160], [S[2], 48]], K, D);
+  const x = M, y = 1180 - h / 2;
+  const hd = fit('IT CLICKS.', 900, W - 2 * M);
+  riseText('IT CLICKS.', M, 300 + hd * 0.72, hd, spring(t, 300, 36) + spring(t - B(3), 420, 42));
+  const fill = t < S[1] ? INK : t < S[2] ? ACCENT : INK;
+  rrect(x, y, w, h, r, t >= S[0] && t < S[1] ? PAPER : fill);
+  if (t >= S[0] && t < S[1]) { g.lineWidth = 6; g.strokeStyle = INK; g.beginPath(); g.roundRect(x, y, w, h, r); g.stroke(); }
+  // content, swapped behind a short blur, entering after each morph starts
+  const blur = (t0) => Math.max(0, 14 * (1 - (t - t0) / 0.12));
+  g.save(); g.beginPath(); g.roundRect(x, y, w, h, r); g.clip();
+  if (t < S[0]) {
+    g.font = font(700, 96, MONO); g.fillStyle = PAPER; g.fillText('Render', x + 140, y + h / 2 + 34);
+    g.beginPath(); g.moveTo(x + 590, y + 86); g.lineTo(x + 650, y + 120); g.lineTo(x + 590, y + 154); g.fillStyle = ACCENT; g.fill();
+  } else if (t < S[1]) {
+    const a = (t - S[0]) * 9;
+    g.lineWidth = 12; g.strokeStyle = ACCENT; g.lineCap = 'round';
+    g.lineWidth = 20; g.beginPath(); g.arc(x + w / 2, y + h / 2, 86, a, a + 4.2); g.stroke();
+  } else if (t < S[2]) {
+    const p = clamp(spring(t - S[1] - 0.06, 260, 30));
+    g.lineWidth = 28; g.strokeStyle = PAPER; g.lineCap = 'round'; g.lineJoin = 'round';
+    const pts = [[x + w * 0.28, y + h * 0.52], [x + w * 0.44, y + h * 0.68], [x + w * 0.74, y + h * 0.34]];
+    g.beginPath(); g.moveTo(...pts[0]);
+    const seg = p * 2;
+    for (let i = 0; i < 2; i++) {
+      const q = clamp(seg - i); if (q <= 0) break;
+      g.lineTo(pts[i][0] + (pts[i + 1][0] - pts[i][0]) * q, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * q);
+    }
+    g.stroke();
+  } else {
+    g.filter = `blur(${blur(S[2] + 0.06)}px)`;
+    const a = clamp((t - S[2] - 0.06) / 0.1);
+    g.globalAlpha = a;
+    g.font = font(400, 44, MONO); g.fillStyle = MUTE; g.fillText('out/final.mp4', x + 64, y + 130);
+    g.font = font(900, fit('3,600', 900, w - 128)); g.fillStyle = PAPER; g.fillText('3,600', x + 56, y + 560);
+    g.font = font(400, 44, MONO); g.fillStyle = PAPER; g.fillText('frames · 60 fps · motion blur', x + 64, y + 660);
+    const pw = (w - 128) * clamp(spring(t - S[2] - 0.1, 120, 24));
+    rrect(x + 64, y + 760, w - 128, 24, 12, '#3a3833'); rrect(x + 64, y + 760, pw, 24, 12, ACCENT);
+    g.font = font(400, 44, MONO); g.fillStyle = MUTE; g.fillText('same render every time', x + 64, y + 900);
+    g.globalAlpha = 1; g.filter = 'none';
+  }
+  g.restore();
+  // cursor drives the click
+  const cx = track(t, [[0, 980], [0.02, 600]], 120, 22), cy = track(t, [[0, 1800], [0.02, 1220]], 120, 22);
+  const press = Math.max(0, 1 - Math.abs(t - S[0]) / 0.08);
+  const away = spring(t - S[0] - 0.15, 120, 22);
+  cursor(cx + away * 300, cy + away * 500, press);
+}
+
+// 5. Rhythm: a grid of tiles flips in diagonal waves on the beat.
+function grid(t) {
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+  const COLS = 6, ROWS = 10, S = (W - 2 * M) / COLS, gap = 14, R = rng(42);
+  const jit = Array.from({ length: COLS * ROWS }, () => (R() - 0.5) * 0.06);
+  const oy = (H - ROWS * S) / 2;
+  const band = spring(t - B(1), 260, 30);
+  for (let r = 0; r < ROWS; r++) for (let col = 0; col < COLS; col++) {
+    const i = r * COLS + col;
+    const d1 = (col + r) * 0.035 + jit[i], d2 = ((COLS - 1 - col) + (ROWS - 1 - r)) * 0.035 + jit[i];
+    const a = Math.PI * (spring(t - d1, 220, 20) + spring(t - B(2) - d2, 220, 20));
+    const sy = Math.abs(Math.cos(a));
+    const back = Math.round(a / Math.PI) % 2 === 1;
+    const inBand = r === 4 || r === 5;
+    const shrink = inBand ? 1 - band : 1;
+    if (shrink <= 0.01) continue;
+    const s = (S - gap) * shrink, x = M + col * S + (S - s) / 2, y = oy + r * S + (S - s * sy) / 2;
+    rrect(x, y, s, s * sy, 18 * shrink, back ? ACCENT : INK);
+  }
+  const words = [['RHYTHM', B(1)], ['ON BEAT', B(3)]];
+  const base = oy + 6 * S - 40, px = fit('ON BEAT', 900, W - 2 * M);
+  riseText(words[0][0], M, base, px * 0.98, io(t, words[0][1], words[1][1], 300, 36));
+  riseText(words[1][0], M, base, px, spring(t - words[1][1], 300, 36), ACCENT);
+}
+
+// 6. Cut on the beat: three bands slide in, one word each, then collapse to lines.
+function cuts(t) {
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+  const words = ['CUT', 'ON THE', 'BEAT'];
+  const bh = 380, top = 420;
+  words.forEach((wd, i) => {
+    const p = spring(t - B(i), 260, 26);
+    const hh = bh * (1 - spring(t - B(3) - 0.12 - i * 0.05, 300, 32) * 0.97);
+    const out = spring(t - B(3) - i * 0.03, 420, 42);
+    const y = top + i * (bh + 40) + (bh - hh) / 2;
+    const x = W - (W - M) * p - 0;
+    rrect(x, y, W, hh, 0, i === 2 ? ACCENT : INK);
+    g.save(); g.beginPath(); g.rect(x, y, W, hh); g.clip();
+    const px = fit(wd, 900, W - 2 * M - 40);
+    g.font = font(900, Math.min(px, 330)); g.fillStyle = i === 2 ? INK : PAPER;
+    g.fillText(wd, x + 40 + (1 - p) * 140, y + bh / 2 - (bh - hh) / 2 + Math.min(px, 330) * 0.36 - out * bh);
+    g.restore();
+  });
+}
+
+// 7. The code: the whole studio is one function.
+function code(t) {
+  g.fillStyle = INK; g.fillRect(0, 0, W, H);
+  const src = ['window.seek = (t) => {', '  paint(frame(t));', '};'];
+  const total = src.join('').length, typed = Math.floor(clamp(t / 0.95) * total);
+  let n = typed;
+  g.font = font(400, 64, MONO);
+  src.forEach((line, i) => {
+    const s = line.slice(0, Math.max(0, n)); n -= line.length;
+    const y = 420 + i * 100;
+    // highlight seek(t) on beat 2
+    if (i === 0 && t > B(2)) {
+      const hp = spring(t - B(2), 300, 30), x0 = M + g.measureText('window.').width;
+      rrect(x0 - 10, y - 56, (g.measureText('seek').width + 20) * hp, 76, 8, ACCENT);
+    }
+    g.fillStyle = PAPER; g.fillText(s, M, y);
+    if (n < 0 && n > -line.length - 1 && Math.floor(t / (BEAT / 2)) % 2 === 0) g.fillRect(M + g.measureText(s).width + 4, y - 50, 28, 64);
+  });
+  const p = spring(t - B(3), 280, 36);
+  g.font = font(400, 36, MONO); g.fillStyle = MUTE;
+  if (p > 0) { g.font = font(400, 44, MONO); g.fillText('// no timeline. no keyframes.', M, 800 + (1 - p) * 30); }
+  const one = fit('ONE', 900, W - 2 * M), fn = fit('FUNCTION.', 900, W - 2 * M);
+  riseText('ONE', M, 1180 + one * 0.72, one, spring(t - B(2), 260, 36), ACCENT);
+  riseText('FUNCTION.', M, 1180 + one * 0.72 + fn * 0.9, fn, spring(t - B(2) - 0.08, 260, 36), PAPER);
+}
+
+// 8. Lockup, then collapse back to the dot (= frame 0).
+function outro(t) {
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+  const px = fit('seek(t)', 900, W - 2 * M);
+  const p = spring(t, 300, 36) + spring(t - B(1.2), 520, 46);
+  riseText('seek(', M, 1000, px, p);
+  g.font = font(900, px); const tx = M + g.measureText('seek(').width;
+  riseText('t', tx, 1000, px, p, ACCENT);
+  riseText(')', tx + g.measureText('t').width, 1000, px, p);
+  if (p > 0.5 && p < 1.5) { g.font = font(400, 44, MONO); g.fillStyle = MUTE; g.fillText('made in code, frame by frame', M, 1220); }
+  const d = spring(t - B(1.2), 300, 34);
+  if (d > 0) rrect(DOT.x, DOT.y - DOT.r * d, DOT.r * 2 * d, DOT.r * 2 * d, DOT.r * d, ACCENT);
+}
+
+const SHOTS = [hook, springs, kinetic, ui, grid, cuts, code, outro];
+window.seek = (t) => {
+  t = ((t % DUR) + DUR) % DUR;
+  const i = Math.min(SHOTS.length - 1, Math.floor((t - PHASE) / (4 * BEAT)));
+  const start = Math.max(0, PHASE + i * 4 * BEAT);
+  g.save(); SHOTS[Math.max(0, i)](t - start); g.restore();
+};
+window.ready.then(() => window.seek(0));
+</script>
+</body>
+</html>
