@@ -1,0 +1,15 @@
+{
+  "name": "motion-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Motion design studio: films written as code, rendered frame by frame with Playwright + ffmpeg.",
+  "scripts": {
+    "render": "node render.mjs",
+    "review": "bash scripts/review.sh",
+    "mix": "bash scripts/mix.sh"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Smoke test</title>
+<style>html,body{margin:0;background:#f3efe7}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="module">
+// Minimal film that follows CLAUDE.md: pure function of time, springs, one accent,
+// a new event on every beat (120 BPM = 0.5s), last frame equals the first.
+import { spring, track, clamp } from '/lib/motion.js';
+
+const c = document.getElementById('c'), g = c.getContext('2d');
+const W = c.width, H = c.height, INK = '#1b1a17', ACCENT = '#e8590c', PAPER = '#f3efe7';
+const B = 0.5, DUR = 4;
+const words = ['CODE', 'IS', 'THE', 'CAMERA'];
+
+window.seek = (t) => {
+  t = ((t % DUR) + DUR) % DUR;
+  g.fillStyle = PAPER; g.fillRect(0, 0, W, H);
+
+  // One container that morphs on every beat and returns to its start state.
+  const keys = (vals) => vals.map((v, i) => [i * B, v]);
+  const w = track(t, keys([200, 760, 760, 900, 520, 900, 760, 760, 200]), 220, 24);
+  const h = track(t, keys([200, 200, 520, 260, 820, 260, 520, 200, 200]), 220, 24);
+  const r = track(t, keys([100, 40, 24, 130, 24, 130, 24, 40, 100]), 220, 24);
+  const x = 140, y = track(t, keys([1500, 1400, 980, 1300, 760, 1300, 980, 1400, 1500]), 180, 26);
+  g.fillStyle = ACCENT; g.beginPath(); g.roundRect(x, y, w, h, r); g.fill();
+
+  // Kinetic type, left-aligned, one word per beat; no overshoot on type.
+  g.fillStyle = INK; g.font = '800 168px Helvetica, Arial, sans-serif'; g.textBaseline = 'alphabetic';
+  words.forEach((word, i) => {
+    const t0 = 0.25 + i * B, t1 = DUR - 0.25 - (words.length - i) * 0.12;
+    const p = spring(t - t0, 260, 40) - spring(t - t1, 260, 40);
+    if (p <= 0.001) return;
+    g.save(); g.beginPath(); g.rect(0, 260 + i * 190 - 160, W, 190); g.clip();
+    g.fillText(word, 120, 260 + i * 190 + (1 - clamp(p)) * 190);
+    g.restore();
+  });
+};
+window.seek(0);
+</script>
+</body>
+</html>
