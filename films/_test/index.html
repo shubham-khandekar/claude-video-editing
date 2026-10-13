@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pipeline test</title>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="module">
+// Pipeline test for the split-card kit: layouts A, E, D, a 2D UI card and a three.js scene.
+import * as THREE from '/node_modules/three/build/three.module.js';
+import { Reel, C, F, W, inn, ease, at, card, chrome, chipEl, text, counter, fmt, lineChart, enter, toast, three3d, cue, clamp } from '/lib/reel.js';
+
+const DIR = '/films/_test/media/';
+const CUES = window.CUES = [];
+window.ready = (async () => {
+  const words = await (await fetch(DIR + 'words_cut.json')).json();
+  await document.fonts.load('700 44px "JetBrains Mono"'); await document.fonts.load('800 40px Inter'); await document.fonts.load('italic 40px "Instrument Serif"');
+  const reel = new Reel({ canvas: document.getElementById('c'), words, face: DIR + 'face/', handle: '@yourhandle' });
+  const T = (w, n) => at(words, w, n);
+
+  // 3D: bars on a floor that grow on "grew", camera orbits slowly.
+  const bars3d = await three3d(THREE, 908, 600, (scene, cam) => {
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d4cc, 2.2));
+    const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(4, 8, 6); scene.add(sun);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 8), new THREE.MeshStandardMaterial({ color: 0xf2f1ed, roughness: 1 }));
+    floor.rotation.x = -Math.PI / 2; scene.add(floor);
+    const heights = [1.2, 1.8, 2.4, 3.4, 4.6], meshes = heights.map((h, i) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1, 0.9), new THREE.MeshStandardMaterial({ color: i === 4 ? 0xffe600 : 0x15151a, roughness: 0.5 }));
+      m.position.x = (i - 2) * 1.4; scene.add(m); return m;
+    });
+    const grew = T('grew');
+    return { update(t) {
+      meshes.forEach((m, i) => { const h = heights[i] * Math.max(0.02, ease((t - grew + 0.6 - i * 0.12) / 0.6)); m.scale.y = h; m.position.y = h / 2; });
+      const a = -0.5 + (t - 1.46) * 0.12; cam.position.set(Math.sin(a) * 8, 4.2, Math.cos(a) * 8); cam.lookAt(0, 1.6, 0);
+    } };
+  });
+
+  const dash = T('dashboards.');
+  cue(CUES, 0.05, 'pop'); cue(CUES, dash, 'tick');
+  reel.shot(0, T('But'), { layout: 'A', draw(g, lt, t) {
+    card(g, 86, 90, 908, 600, inn(t, 0.05, 0.3), () => {
+      chrome(g, 86, 90, 908, 'analytics.app/overview', { chip: { text: 'LIVE ●', color: C.green } });
+      enter(g, inn(t, 0.18), () => text(g, 'Monthly visitors', 126, 215, { size: 26, weight: 600, color: C.sub }));
+      enter(g, inn(t, 0.26), () => text(g, fmt(counter(t, 0.3, 48210, 1.1)), 126, 300, { size: 84, weight: 800 }));
+      enter(g, inn(t, 0.34), () => lineChart(g, 126, 350, 828, 230, [0.1, 0.18, 0.15, 0.32, 0.4, 0.38, 0.62, 0.88], inn(t, 0.4, 1.0), { labels: ['JAN', 'MAR', 'MAY', 'JUL'] }));
+      if (t > dash) chipEl(g, 954, 215, '+240%', C.green, { align: 'right', filled: true });
+    });
+  } });
+  cue(CUES, T('But') + 0.05, 'pop');
+  reel.shot(T('But'), T('Follow'), { layout: 'E', bg: 'paper', draw(g, lt, t) {
+    text(g, 'In 3D.', 86, 230, { size: 120, weight: 400, font: F.serif, italic: true });
+    card(g, 86, 300, 908, 640, inn(lt, 0.05), () => bars3d.draw(g, 86, 320, t));
+    enter(g, inn(t, T('fast.')), () => chipEl(g, 954, 1000, 'GROWTH ✓', C.green, { align: 'right', dashed: true, size: 24 }));
+  } });
+  cue(CUES, T('fast.'), 'ding');
+  reel.shot(T('Follow'), 99, { layout: 'D', draw(g, lt, t) {
+    toast(g, 240, 1250, 600, 'Followed @yourhandle', inn(lt, 0.3));
+  } });
+  cue(CUES, T('Follow') + 0.3, 'click');
+
+  window.seek = (t) => reel.seek(t);
+})();
+</script>
+</body>
+</html>

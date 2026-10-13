@@ -1,0 +1,13 @@
+{ "title": "Pipeline test", "style": "split-card reel (calm)", "audio": "Voice from cut.mp4, soft pad bed ducked under speech, pop/tick/ding/click SFX at -15 dB, mixed to -14 LUFS.",
+  "notes": "Synthetic test clip; checks layouts A/E/D, a 2D UI card and a three.js scene.",
+  "scenes": [
+   { "id": "S1", "start": 0, "end": 1.46, "layout": "A", "title": "Analytics dashboard", "voice": "Most people build dashboards.", "captions": ["MOST PEOPLE BUILD", "DASHBOARDS"],
+     "onscreen": "Browser card analytics.app with LIVE chip, visitor counter, line chart, +240% chip.", "frames": [0.3, 1.3],
+     "animations": [{ "t": 0.05, "dur": 0.3, "what": "card scales in 0.96 -> 1", "ease": "power2.out" }, { "t": 0.3, "dur": 1.1, "what": "counter 0 -> 48,210", "ease": "power2.out" }, { "t": 1.17, "dur": 0.2, "what": "+240% chip on 'dashboards'", "ease": "" }],
+     "sfx": ["pop 0.05", "tick 1.17"] },
+   { "id": "S2", "start": 1.46, "end": 4.02, "layout": "E", "title": "3D growth bars", "voice": "But this one is 3D and it grew fast.", "captions": ["BUT THIS ONE", "IS 3D AND", "IT GREW FAST"],
+     "onscreen": "three.js bar chart on a paper floor, camera orbiting; face in PiP bubble.", "frames": [2.2, 3.8],
+     "animations": [{ "t": 2.95, "dur": 0.6, "what": "bars grow, staggered 0.12s", "ease": "power2.out" }, { "t": 3.39, "dur": 0.35, "what": "GROWTH chip", "ease": "power2.out" }],
+     "sfx": ["pop 1.51", "ding 3.39"] },
+   { "id": "S3", "start": 4.02, "end": 5.18, "layout": "D", "title": "CTA", "voice": "Follow for more.", "captions": ["FOLLOW FOR MORE"],
+     "onscreen": "Full face, Followed toast.", "animations": [{ "t": 4.32, "dur": 0.35, "what": "toast slides up", "ease": "power2.out" }], "sfx": ["click 4.32"] } ] }

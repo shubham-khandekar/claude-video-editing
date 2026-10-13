@@ -37,6 +37,12 @@ re-renders, **xhigh** for new videos.
 - Or paste a brief from [`prompts/`](prompts/), in order of ambition:
   smoke test → product launch → reference → state list → springs → sound → critique → overnight director's brief.
 
+## Talking-head reels
+
+Upload a face-cam video and ask for an edit; the `/talking-head-reel` skill runs: transcribe (faster-whisper) →
+cut pauses → split-card film with UI cards and three.js scenes (`lib/reel.js`) → storyboard brief PDF for approval →
+render → voice + SFX + bed mix at -14 LUFS. `films/_test/` is a working example on a synthetic clip.
+
 ## Commands
 
 | Command | What it does |

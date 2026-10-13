@@ -14,7 +14,7 @@ export async function serve(root = process.cwd()) {
     const path = join(root, normalize(decodeURIComponent(req.url.split('?')[0])));
     readFile(path, (err, body) => {
       if (err) { res.writeHead(404); res.end(); return; }
-      res.writeHead(200, { 'Content-Type': TYPES[extname(path)] || 'application/octet-stream' });
+      res.writeHead(200, { 'Content-Type': TYPES[extname(path)] || 'application/octet-stream', 'Access-Control-Allow-Origin': '*' });
       res.end(body);
     });
   });

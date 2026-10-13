@@ -1,0 +1,5 @@
+/* OFL fonts from Google Fonts (latin subset). Inter and JetBrains Mono are variable. */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; src: url('/assets/fonts/Inter.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; src: url('/assets/fonts/JetBrainsMono.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: normal; font-weight: 400; src: url('/assets/fonts/InstrumentSerif-400.woff2') format('woff2'); }
+@font-face { font-family: 'Instrument Serif'; font-style: italic; font-weight: 400; src: url('/assets/fonts/InstrumentSerif-400i.woff2') format('woff2'); }

@@ -57,6 +57,8 @@ video made here.
 - `scripts/review.sh` — contact sheet, strip, phone test, loop check from a rendered MP4
 - `scripts/mix.sh` — normalize audio to -14 LUFS and mux with the silent render
 - `films/<name>/` — one folder per film: `index.html`, `beats.json`, music script, review log
+- Talking-head reels: `/talking-head-reel` skill. `scripts/transcribe.py`, `scripts/cut_silence.py`, `lib/reel.js`
+  (split-card kit + three.js helper), `scripts/cues.mjs`, `scripts/reel_audio.py`, `scripts/brief.mjs` (approval PDF)
 - `prompts/` — brief templates (product launch, reference, state list, director's brief, critique)
 - `assets/` gathered brand assets · `refs/` references · `audio/` tracks · `docs/` style guide, shot list, review log · `out/` renders (git-ignored)
 - `/motion-reel` skill packages the whole pipeline (`.claude/skills/motion-reel/SKILL.md`).
